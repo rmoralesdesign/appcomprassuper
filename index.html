@@ -1,4 +1,8 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Compras del Súper</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
 <style>
@@ -18,6 +22,9 @@
   --accent:#f5c518; --on-accent:#1c1a05; --ok-bg:#173f29; --ok-ink:#93e2b0; --ok:#36c275;
   --danger:#ff7b72; --field:#121917; color-scheme:dark }
 *{box-sizing:border-box}
+html{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+body{margin:0}
+[hidden]{display:none!important}
 html,body{height:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.35}
 button,input,select{font:inherit;color:inherit}
@@ -90,10 +97,27 @@ th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute
 #toast{position:fixed;left:16px;right:16px;bottom:84px;margin:auto;max-width:420px;background:var(--ink);color:var(--bg);padding:12px 14px;border-radius:10px;text-align:center;font-weight:600;z-index:20}
 @media (min-width:600px){#modal{align-items:center}}
 </style>
+</head>
+<body>
+<script>
+/* ===== CONFIGURACION DE FIREBASE: INICIO (reemplace desde aqui) ===== */
+const firebaseConfig = {
+  apiKey: "PEGUE_AQUI",
+  authDomain: "PEGUE_AQUI",
+  projectId: "PEGUE_AQUI",
+  storageBucket: "PEGUE_AQUI",
+  messagingSenderId: "PEGUE_AQUI",
+  appId: "PEGUE_AQUI"
+};
+/* ===== CONFIGURACION DE FIREBASE: FIN (reemplace hasta aqui) ===== */
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
 <div id="app">
   <header>
-    <div class="brand"><h1>Compras del Súper</h1><span id="sync">Conectando…</span></div>
+    <div class="brand"><h1>Compras del Súper</h1><span style="display:flex;gap:8px;align-items:center"><span id="sync">Conectando…</span><button id="out" class="btn" style="min-height:32px;padding:4px 10px;font-size:13px" hidden>Salir</button></span></div>
     <div id="stats"></div>
   </header>
   <div class="stage">
@@ -118,7 +142,7 @@ const COLS={cat:'categorias',sup:'supermercados',prod:'productos',lista:'lista',
 const K={cat:{uno:'categoría',f:'nombre',titulo:'Categorías'},sup:{uno:'supermercado',f:'nombre',titulo:'Supermercados'},prod:{uno:'producto',f:'descripcion',titulo:'Productos'}};
 const S={cat:{},sup:{},prod:{},lista:{},hist:{}};
 const loaded={};
-let db=null,view='lista',dirty=false,onYes=null,toastT=0;
+let db=null,view='lista',dirty=false,onYes=null,toastT=0,authed=false,denied=false,aviso='',unsubs=[];
 
 const money=n=>{const [i,d]=(Math.round((+n||0)*100)/100).toFixed(2).split('.');return '₡'+i.replace(/\B(?=(\d{3})+(?!\d))/g,' ')+','+d};
 const parseNum=v=>{let s=String(v).replace(/[\s ₡]/g,'');if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');const n=parseFloat(s);return isFinite(n)&&n>=0?n:0};
@@ -202,7 +226,15 @@ function vHist(){
   return h+'</ul>';
 }
 function render(){
-  dirty=false;stats();
+  dirty=false;
+  $('#nav').hidden=!authed||denied;
+  if(aviso||!authed||denied){
+    $('#stats').innerHTML='';$('#fab').hidden=true;
+    $('#view').innerHTML=aviso?'<p class="empty">'+aviso+'</p>':denied?'<p class="empty">Su correo no está en la lista de correos autorizados.<br>Revise las reglas de seguridad (Parte 4 de la guía) y vuelva a entrar.</p>':
+      '<h2>Ingresar</h2><form class="form" data-form="login"><label>Correo<input type="text" inputmode="email" autocomplete="username" id="lg-e" name="e" required></label><label>Contraseña<input type="password" autocomplete="current-password" id="lg-p" name="p" required style="width:100%;background:var(--field);border:1px solid var(--line);border-radius:8px;padding:8px;min-height:38px"></label><button class="btn pri">Entrar</button></form>';
+    return;
+  }
+  stats();
   document.querySelectorAll('#nav button').forEach(b=>b.dataset.go===view?b.setAttribute('aria-current','page'):b.removeAttribute('aria-current'));
   $('#fab').hidden=view!=='lista';
   const open=[...document.querySelectorAll('#view details[open] summary')].map(s=>s.textContent);
@@ -289,6 +321,7 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('submit',async e=>{
   e.preventDefault();const f=e.target,k=f.dataset.form;
+  if(k==='login'){try{await firebase.auth().signInWithEmailAndPassword(f.elements.e.value.trim(),f.elements.p.value)}catch(err){toast('Correo o contraseña incorrectos.')}return}
   if(!db)return toast('Sin conexión a los datos compartidos.');
   if(k==='line'){
     const pid=f.dataset.id,sid=f.elements.s.value;
@@ -327,16 +360,30 @@ document.addEventListener('focusin',e=>{if(e.target.classList?.contains('num'))e
 document.addEventListener('focusout',()=>setTimeout(()=>{if(dirty&&!editing())render()},60));
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.closest?.('.line')&&e.target.type==='text')e.target.blur();if(e.key==='Escape'&&!$('#modal').hidden)closeModal()});
 
-async function start(){
-  render();
-  db=window.claude?.use?await window.claude.use('db'):null;
-  if(!db){$('#sync').textContent='Sin conexión';$('#view').innerHTML='<p class="empty">No se pudo abrir la lista compartida.<br>Abra la app con su sesión iniciada y con permiso para usarla.</p>';return}
-  $('#sync').textContent='Lista compartida';
-  for(const [k,col] of Object.entries(COLS))db.collection(col).onSnapshot(snap=>{
-    const o={};snap.docs.forEach(d=>{o[d.id]={...d.data()}});S[k]=o;loaded[k]=true;schedule();
-  },()=>{$('#sync').textContent='Sin conexión'});
+const SEED={categorias:{'limpieza-hogar':'Limpieza Hogar','higiene-personal':'Higiene Personal',granos:'Granos',lacteos:'Lácteos',carnes:'Carnes',snacks:'Snacks'},supermercados:{pricesmart:'PriceSmart',walmart:'Walmart'}};
+async function seed(){
+  const r=db.doc('config/inicial'),s=await r.get();if(s.exists)return;
+  for(const col in SEED)for(const id in SEED[col])await db.doc(col+'/'+id).set({nombre:SEED[col][id]});
+  await r.set({creado:true});
+}
+function start(){
+  if(!window.firebase){aviso='No se pudo cargar Firebase. Revise su conexión a internet y recargue la página.';$('#sync').textContent='Sin conexión';return render()}
+  if(String(firebaseConfig.apiKey).includes('PEGUE')){aviso='Falta pegar la configuración de Firebase en el archivo index.html (Parte 5 de la guía).';$('#sync').textContent='Sin configurar';return render()}
+  firebase.initializeApp(firebaseConfig);db=firebase.firestore();
+  $('#out').addEventListener('click',()=>firebase.auth().signOut());
+  firebase.auth().onAuthStateChanged(u=>{
+    unsubs.forEach(f=>f());unsubs=[];authed=!!u;denied=false;$('#out').hidden=!u;
+    for(const k in S){S[k]={};delete loaded[k]}
+    $('#sync').textContent=u?'Lista compartida':'';
+    render();if(!u)return;
+    seed().catch(()=>{});
+    for(const [k,col] of Object.entries(COLS))unsubs.push(db.collection(col).onSnapshot(snap=>{
+      const o={};snap.docs.forEach(d=>{o[d.id]={...d.data()}});S[k]=o;loaded[k]=true;schedule();
+    },e=>{if(e&&e.code==='permission-denied'){denied=true;render()}else $('#sync').textContent='Sin conexión'}));
+  });
 }
 start();
 </script>
 
-</body></html>
+</body>
+</html>
