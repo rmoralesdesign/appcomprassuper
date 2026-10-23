@@ -94,6 +94,13 @@ th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute
 .sheet p{margin:0}
 .yn{display:flex;gap:10px}
 .yn .btn{flex:1;font-size:17px;min-height:48px}
+#m-form{display:flex;flex-direction:column;gap:12px;min-height:0;flex:1;margin:0}
+.pk{border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
+.pk.on{border-color:var(--ok);background:var(--ok-bg);color:var(--ok-ink)}
+.ph{display:flex;gap:10px;align-items:center;cursor:pointer}
+.ph input[type=checkbox]{width:26px;height:26px;accent-color:var(--ok);flex:0 0 auto;margin:0}
+#m-sum{margin:0;font-weight:600;font-variant-numeric:tabular-nums}
+.btn:disabled{opacity:.5;cursor:default}
 #toast{position:fixed;left:16px;right:16px;bottom:84px;margin:auto;max-width:420px;background:var(--ink);color:var(--bg);padding:12px 14px;border-radius:10px;text-align:center;font-weight:600;z-index:20}
 @media (min-width:600px){#modal{align-items:center}}
 </style>
@@ -102,13 +109,12 @@ th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute
 <script>
 /* ===== CONFIGURACION DE FIREBASE: INICIO (reemplace desde aqui) ===== */
 const firebaseConfig = {
-  apiKey: "AIzaSyB9v3ajBpKJEaW-dzAv_Mvx9coFlzKzoI8",
-  authDomain: "compras-del-super.firebaseapp.com",
-  projectId: "compras-del-super",
-  storageBucket: "compras-del-super.firebasestorage.app",
-  messagingSenderId: "80639759602",
-  appId: "1:80639759602:web:bdd7c0f168c87efa626c6b",
-  measurementId: "G-2FWEL090J0"
+  apiKey: "PEGUE_AQUI",
+  authDomain: "PEGUE_AQUI",
+  projectId: "PEGUE_AQUI",
+  storageBucket: "PEGUE_AQUI",
+  messagingSenderId: "PEGUE_AQUI",
+  appId: "PEGUE_AQUI"
 };
 /* ===== CONFIGURACION DE FIREBASE: FIN (reemplace hasta aqui) ===== */
 </script>
@@ -176,7 +182,7 @@ function stats(){
     (sup?'<div class="supers">'+sup+'</div>':'')+
     '<div class="acts"><button class="btn pri" data-act="finish">Terminar compra</button><button class="btn" data-act="reset">Nueva compra</button></div></div>';
 }
-const supOpts=sel=>byName(S.sup,'nombre').map(([id,s])=>'<option value="'+id+'"'+(id===sel?' selected':'')+'>'+esc(s.nombre)+'</option>').join('');
+const supOpts=(sel,first)=>(first?'<option value="">'+first+'</option>':'')+byName(S.sup,'nombre').map(([id,s])=>'<option value="'+id+'"'+(id===sel?' selected':'')+'>'+esc(s.nombre)+'</option>').join('');
 const catOpts=(sel,first)=>(first?'<option value="">'+first+'</option>':'')+byName(S.cat,'nombre').map(([id,c])=>'<option value="'+id+'"'+(id===sel?' selected':'')+'>'+esc(c.nombre)+'</option>').join('');
 
 function vLista(){
@@ -203,12 +209,12 @@ function vCatalogo(k){
   let h='<h2>'+c.titulo+'</h2><form class="form" data-form="'+k+'"><div class="row">'+
     '<input type="text" id="new-'+k+'" name="v" maxlength="80" required placeholder="'+(k==='prod'?'Descripción del producto':'Nombre de'+(k==='cat'?' la categoría':'l supermercado'))+'" aria-label="Nombre">'+
     (k==='prod'?'<select id="new-prod-cat" name="c" required aria-label="Categoría">'+catOpts('','Categoría…')+'</select>':'')+
-    '</div><button class="btn pri">Agregar '+c.uno+'</button></form>';
+    '</div>'+(k==='prod'?'<div class="row"><label>Supermercado<select id="new-prod-sup" name="s">'+supOpts('','Sin definir')+'</select></label><label>Costo unitario ₡<input type="text" inputmode="decimal" class="num" id="new-prod-cos" name="k" value="0,00"></label></div>':'')+'<button class="btn pri">Agregar '+c.uno+'</button></form>';
   if(k==='prod')h+='<div class="form"><div class="row"><input type="search" id="q-prod" data-filter placeholder="Buscar producto" aria-label="Buscar producto"><select id="qc-prod" data-filter aria-label="Filtrar por categoría">'+catOpts('','Todas las categorías')+'</select></div></div>';
   const rows=byName(S[k],c.f);
   if(!rows.length)return h+'<p class="empty">Todavía no hay '+c.titulo.toLowerCase()+'. Agregue '+(k==='cat'?'la primera':'el primero')+' arriba.</p>';
   h+='<ul id="items">';
-  for(const [id,r] of rows)h+='<li class="item" data-id="'+id+'" data-t="'+esc(norm(r[c.f]))+'" data-c="'+esc(r.categoriaId||'')+'"><span class="desc">'+esc(r[c.f])+(k==='prod'?'<small>'+esc(nCat(r.categoriaId))+'</small>':'')+'</span>'+
+  for(const [id,r] of rows)h+='<li class="item" data-id="'+id+'" data-t="'+esc(norm(r[c.f]))+'" data-c="'+esc(r.categoriaId||'')+'"><span class="desc">'+esc(r[c.f])+(k==='prod'?'<small>'+esc(nCat(r.categoriaId))+(S.sup[r.superId]?' · '+esc(nSup(r.superId)):'')+(+r.costo>0?' · '+money(r.costo):'')+'</small>':'')+'</span>'+
     '<button class="btn" data-act="edit" data-k="'+k+'">Editar</button><button class="btn warn" data-act="rm" data-k="'+k+'">Eliminar</button></li>';
   return h+'</ul>';
 }
@@ -255,20 +261,51 @@ function lastCost(pid){
 function openAdd(){
   if(!Object.keys(S.prod).length)return toast('Primero registre productos en la pestaña Productos.');
   if(!Object.keys(S.sup).length)return toast('Primero registre un supermercado en la pestaña Súpers.');
+  const firstSup=byName(S.sup,'nombre')[0][0];
+  const rows=byName(S.prod,'descripcion').map(([id,p])=>{
+    const sid=S.sup[p.superId]?p.superId:firstSup,cost=+p.costo>0?+p.costo:lastCost(id);
+    const en=Object.values(S.lista).filter(l=>l.productoId===id).map(l=>nSup(l.superId));
+    return '<li class="pk" data-t="'+esc(norm(p.descripcion))+'" data-c="'+esc(p.categoriaId||'')+'" data-pid="'+id+'">'+
+      '<label class="ph"><input type="checkbox" class="m-chk" id="mk-'+id+'"><span class="desc">'+esc(p.descripcion)+'<small>'+esc(nCat(p.categoriaId))+(en.length?' · Ya en la lista: '+esc(en.join(', ')):'')+'</small></span><span class="tot" data-tot></span></label>'+
+      '<div class="flds" hidden><label>Supermercado<select id="ms-'+id+'" data-m="s">'+supOpts(sid)+'</select></label>'+
+      '<label>Cantidad<input type="text" inputmode="decimal" class="num" id="mq-'+id+'" data-m="q" value="1"></label>'+
+      '<label>Costo unitario ₡<input type="text" inputmode="decimal" class="num" id="mc-'+id+'" data-m="c" value="'+numIn(cost,1)+'"></label></div></li>';
+  }).join('');
   modal('<h2>Agregar a la lista</h2><div class="form" style="margin:0"><div class="row"><input type="search" id="m-q" placeholder="Buscar producto" aria-label="Buscar producto"><select id="m-c" aria-label="Filtrar por categoría">'+catOpts('','Todas las categorías')+'</select></div></div>'+
-    '<ul id="m-list">'+byName(S.prod,'descripcion').map(([id,p])=>'<li data-t="'+esc(norm(p.descripcion))+'" data-c="'+esc(p.categoriaId||'')+'"><button class="item" data-act="pick" data-id="'+id+'"><span class="desc">'+esc(p.descripcion)+'<small>'+esc(nCat(p.categoriaId))+'</small></span></button></li>').join('')+'</ul>'+
-    '<button class="btn" data-act="no">Cerrar</button>');
+    '<form id="m-form" data-form="multi"><ul id="m-list">'+rows+'</ul><p id="m-sum"></p>'+
+    '<div class="yn"><button class="btn pri" id="m-add">Agregar</button><button type="button" class="btn" data-act="no">Cancelar</button></div></form>');
+  mSum();
 }
-function pick(pid){
-  modal('<h2>'+esc(nProd(pid))+'</h2><form class="form" data-form="line" data-id="'+pid+'" style="margin:0">'+
-    '<label>Supermercado<select id="m-sup" name="s" required>'+supOpts('')+'</select></label>'+
-    '<div class="row"><label>Cantidad<input type="text" inputmode="decimal" class="num" id="m-can" name="q" value="1"></label>'+
-    '<label>Costo unitario ₡<input type="text" inputmode="decimal" class="num" id="m-cos" name="c" value="'+numIn(lastCost(pid),1)+'"></label></div>'+
-    '<p>Total de la línea: <strong id="m-tot"></strong></p>'+
-    '<div class="yn"><button class="btn pri">Agregar</button><button type="button" class="btn" data-act="no">Cancelar</button></div></form>');
-  mTot();
+function mRow(li){
+  const on=li.querySelector('.m-chk').checked;
+  li.classList.toggle('on',on);li.querySelector('.flds').hidden=!on;
+  li.querySelector('[data-tot]').textContent=on?money(parseNum(li.querySelector('[data-m=q]').value)*parseNum(li.querySelector('[data-m=c]').value)):'';
 }
-function mTot(){const t=$('#m-tot');if(t)t.textContent=money(parseNum($('#m-can').value)*parseNum($('#m-cos').value))}
+function mSum(){
+  const sel=[...document.querySelectorAll('#m-list .pk.on')];
+  const t=sel.reduce((a,li)=>a+parseNum(li.querySelector('[data-m=q]').value)*parseNum(li.querySelector('[data-m=c]').value),0);
+  $('#m-sum').textContent=sel.length?sel.length+(sel.length===1?' producto seleccionado':' productos seleccionados')+' · '+money(t):'Marque los productos que desea agregar.';
+  const b=$('#m-add');b.disabled=!sel.length;b.textContent=sel.length?'Agregar ('+sel.length+')':'Agregar';
+}
+async function syncProd(pid,sid,cost){
+  const p=S.prod[pid];if(!p)return;const d={};
+  if(sid&&S.sup[sid]&&p.superId!==sid)d.superId=sid;
+  if(+cost>0&&+p.costo!==+cost)d.costo=+cost;
+  if(Object.keys(d).length){Object.assign(p,d);await save(db.doc(COLS.prod+'/'+pid).update(d))}
+}
+async function addSelected(){
+  const items=[...document.querySelectorAll('#m-list .pk.on')].map(li=>({pid:li.dataset.pid,sid:li.querySelector('[data-m=s]').value,q:parseNum(li.querySelector('[data-m=q]').value),c:parseNum(li.querySelector('[data-m=c]').value)}));
+  if(!items.length)return toast('Marque al menos un producto.');
+  if(items.some(x=>!x.sid))return toast('Elija el supermercado de cada producto marcado.');
+  const dup=items.filter(x=>dupLine(x.pid,x.sid));
+  if(dup.length)return toast('Ya está en la lista con ese supermercado: '+dup.map(x=>nProd(x.pid)+' ('+nSup(x.sid)+')').join(', ')+'. Cambie el supermercado o desmárquelo.');
+  closeModal();
+  for(const x of items){
+    if(!await save(db.collection(COLS.lista).add({productoId:x.pid,superId:x.sid,cantidad:x.q,costo:x.c,check:false})))return;
+    await syncProd(x.pid,x.sid,x.c);
+  }
+  toast(items.length===1?'Producto agregado a la lista.':items.length+' productos agregados a la lista.');
+}
 const dupLine=(pid,sid,except)=>Object.entries(S.lista).some(([id,l])=>id!==except&&l.productoId===pid&&l.superId===sid);
 const dupName=(k,v,except)=>Object.entries(S[k]).some(([id,r])=>id!==except&&norm(r[K[k].f])===norm(v));
 function today(){const d=new Date(),p=n=>String(n).padStart(2,'0');return{fecha:d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()),hora:p(d.getHours())+':'+p(d.getMinutes()),id:d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())}}
@@ -292,7 +329,8 @@ function editItem(k,id){
   const r=S[k][id];if(!r)return;
   modal('<h2>Editar '+K[k].uno+'</h2><form class="form" data-form="edit" data-k="'+k+'" data-id="'+id+'" style="margin:0">'+
     '<input type="text" id="m-v" name="v" maxlength="80" required value="'+esc(r[K[k].f])+'" aria-label="Nombre">'+
-    (k==='prod'?'<select id="m-pc" name="c" required aria-label="Categoría">'+catOpts(r.categoriaId,'Categoría…')+'</select>':'')+
+    (k==='prod'?'<select id="m-pc" name="c" required aria-label="Categoría">'+catOpts(r.categoriaId,'Categoría…')+'</select>'+
+      '<div class="row"><label>Supermercado<select id="m-ps" name="s">'+supOpts(S.sup[r.superId]?r.superId:'','Sin definir')+'</select></label><label>Costo unitario ₡<input type="text" inputmode="decimal" class="num" id="m-pk" name="k" value="'+numIn(r.costo,1)+'"></label></div>':'')+
     '<div class="yn"><button class="btn pri">Guardar</button><button type="button" class="btn" data-act="no">Cancelar</button></div></form>');
 }
 function rmItem(k,id){
@@ -313,7 +351,6 @@ document.addEventListener('click',e=>{
   if(a==='yes'){const f=onYes;closeModal();if(f)f();return}
   if(!db)return toast('Sin conexión a los datos compartidos.');
   if(a==='add')openAdd();
-  else if(a==='pick')pick(b.dataset.id);
   else if(a==='finish')finish();
   else if(a==='reset')reset();
   else if(a==='edit')editItem(b.dataset.k,id);
@@ -324,25 +361,19 @@ document.addEventListener('submit',async e=>{
   e.preventDefault();const f=e.target,k=f.dataset.form;
   if(k==='login'){try{await firebase.auth().signInWithEmailAndPassword(f.elements.e.value.trim(),f.elements.p.value)}catch(err){toast('Correo o contraseña incorrectos.')}return}
   if(!db)return toast('Sin conexión a los datos compartidos.');
-  if(k==='line'){
-    const pid=f.dataset.id,sid=f.elements.s.value;
-    if(!sid)return toast('Elija un supermercado.');
-    if(dupLine(pid,sid))return toast('Ese producto ya está en la lista para ese supermercado.');
-    const data={productoId:pid,superId:sid,cantidad:parseNum(f.elements.q.value),costo:parseNum(f.elements.c.value),check:false};
-    closeModal();await save(db.collection(COLS.lista).add(data));return;
-  }
+  if(k==='multi')return addSelected();
   const kk=k==='edit'?f.dataset.k:k,v=f.elements.v.value.trim(),id=k==='edit'?f.dataset.id:null;
   if(!v)return;
   if(dupName(kk,v,id))return toast('Ya existe un'+(kk==='cat'?'a ':' ')+K[kk].uno+' con ese nombre.');
   const data={[K[kk].f]:v};
-  if(kk==='prod'){if(!f.elements.c.value)return toast('Elija una categoría.');data.categoriaId=f.elements.c.value}
+  if(kk==='prod'){if(!f.elements.c.value)return toast('Elija una categoría.');data.categoriaId=f.elements.c.value;data.superId=f.elements.s.value||'';data.costo=parseNum(f.elements.k.value)}
   if(id){closeModal();await save(db.doc(COLS[kk]+'/'+id).update(data))}
   else{f.reset();document.activeElement?.blur();await save(db.collection(COLS[kk]).add(data))}
 });
 document.addEventListener('input',e=>{
   const t=e.target;
   if(t.id==='m-q'||t.id==='m-c')return filtrar($('#m-list'),$('#m-q').value,$('#m-c').value);
-  if(t.id==='m-can'||t.id==='m-cos')return mTot();
+  if(t.classList.contains('m-chk')||t.dataset.m){const li=t.closest('.pk');if(li){mRow(li);mSum()}return}
   if(t.dataset.filter!==undefined)return filtrar($('#items'),$('#q-prod').value,$('#qc-prod').value);
   const li=t.closest('.line'),f=t.dataset.f;
   if(li&&(f==='cantidad'||f==='costo')){const l=S.lista[li.dataset.id];if(!l)return;l[f]=parseNum(t.value);li.querySelector('.tot').textContent=money(lineTot(l));stats()}
@@ -355,7 +386,7 @@ document.addEventListener('change',async e=>{
   else if(f==='superId'){v=t.value;if(!v)return;if(dupLine(l.productoId,v,id)){toast('Ese producto ya está en la lista para ese supermercado.');t.blur();render();return}}
   else v=parseNum(t.value);
   l[f]=v;stats();
-  await save(db.doc(COLS.lista+'/'+id).update({[f]:v}));
+  if(await save(db.doc(COLS.lista+'/'+id).update({[f]:v}))&&(f==='superId'||f==='costo'))await syncProd(l.productoId,l.superId,l.costo);
 });
 document.addEventListener('focusin',e=>{if(e.target.classList?.contains('num'))e.target.select()});
 document.addEventListener('focusout',()=>setTimeout(()=>{if(dirty&&!editing())render()},60));
