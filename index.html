@@ -3,6 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#f5c518">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Compras">
 <title>Compras del Súper</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
 <style>
@@ -31,13 +38,16 @@ button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 #app{height:100%;max-width:720px;margin:0 auto;display:flex;flex-direction:column}
-header{padding:12px 16px 10px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--line)}
+header{padding:8px 16px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--line)}
 .brand{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-h1{font-family:var(--display);font-weight:800;font-size:22px;margin:0;letter-spacing:-.02em}
+h1{font-family:var(--display);font-weight:800;font-size:19px;margin:0;letter-spacing:-.02em}
 #sync{font-size:12px;color:var(--muted)}
-.tag{background:var(--accent);color:var(--on-accent);border-radius:14px 14px 14px 4px;padding:10px 14px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
-.tag small{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
-.tag b{font-family:var(--display);font-weight:800;font-size:30px;line-height:1;font-variant-numeric:tabular-nums}
+.tag{background:var(--accent);color:var(--on-accent);border-radius:12px 12px 12px 4px;padding:7px 8px 7px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.tag .tg{min-width:0;display:flex;flex-direction:column;gap:1px}
+.tag .l1{display:flex;align-items:baseline;gap:8px;white-space:nowrap}
+.tag .l2{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.tag small{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+.tag b{font-family:var(--display);font-weight:800;font-size:23px;line-height:1;font-variant-numeric:tabular-nums}
 .tag .cart{text-align:right;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
 .supers{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
 .sup{flex:0 0 auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 10px;min-width:120px}
@@ -101,6 +111,18 @@ main .tools{position:sticky;top:-12px;z-index:2;background:var(--bg);margin:-12p
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 #lf-msg{font-size:13px;color:var(--muted);margin:0}
 .sup em b{font-weight:700;color:var(--ink)}
+.mbtn{flex:0 0 auto;position:relative;display:flex;align-items:center;gap:6px;border:0;border-radius:10px;background:var(--ink);color:var(--bg);font-weight:700;min-height:42px;padding:0 12px}
+.mbtn i{font-style:normal;font-size:18px;line-height:1}
+.mbtn em{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;border-radius:10px;background:var(--danger);color:#fff;font-style:normal;font-size:12px;display:grid;place-items:center;padding:0 5px}
+.mlab{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0}
+.mopt{width:100%;display:flex;gap:10px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:9px 12px;min-height:52px}
+.mopt[aria-pressed="true"]{border-color:var(--ok);background:var(--ok-bg);color:var(--ok-ink)}
+.mopt .bx{width:22px;height:22px;border-radius:6px;border:2px solid currentColor;flex:0 0 auto;display:grid;place-items:center;font-weight:800;font-size:14px}
+.mopt .nm{flex:1;min-width:0;font-weight:700}
+.mopt .nm small{display:block;font-weight:500;font-size:12px;opacity:.8}
+.mopt .am{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.yn.mact .btn{font-size:15px}
+.fbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;font-weight:600}
 #m-form{display:flex;flex-direction:column;gap:12px;min-height:0;flex:1;margin:0}
 .pk{border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
 .pk.on{border-color:var(--ok);background:var(--ok-bg);color:var(--ok-ink)}
@@ -116,12 +138,12 @@ main .tools{position:sticky;top:-12px;z-index:2;background:var(--bg);margin:-12p
 <script>
 /* ===== CONFIGURACION DE FIREBASE: INICIO (reemplace desde aqui) ===== */
 const firebaseConfig = {
-  apiKey: "AIzaSyB9v3ajBpKJEaW-dzAv_Mvx9coFlzKzoI8",
-  authDomain: "compras-del-super.firebaseapp.com",
-  projectId: "compras-del-super",
-  storageBucket: "compras-del-super.firebasestorage.app",
-  messagingSenderId: "80639759602",
-  appId: "1:80639759602:web:bdd7c0f168c87efa626c6b"
+  apiKey: "PEGUE_AQUI",
+  authDomain: "PEGUE_AQUI",
+  projectId: "PEGUE_AQUI",
+  storageBucket: "PEGUE_AQUI",
+  messagingSenderId: "PEGUE_AQUI",
+  appId: "PEGUE_AQUI"
 };
 /* ===== CONFIGURACION DE FIREBASE: FIN (reemplace hasta aqui) ===== */
 </script>
@@ -171,24 +193,37 @@ const lineTot=l=>(+l.cantidad||0)*(+l.costo||0);
 
 function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,3200)}
 async function save(p){try{await p;return true}catch(e){toast(e&&e.code==='quota_exceeded'?'El almacenamiento está lleno. Elimine compras antiguas.':'No se pudo guardar. Es posible que solo tenga permiso de lectura.');render();return false}}
-function modal(html){$('#modal').innerHTML='<div class="sheet" role="dialog" aria-modal="true">'+html+'</div>';$('#modal').hidden=false}
-function closeModal(){$('#modal').hidden=true;$('#modal').innerHTML='';onYes=null}
+function modal(html){menuOpen=false;$('#modal').innerHTML='<div class="sheet" role="dialog" aria-modal="true">'+html+'</div>';$('#modal').hidden=false}
+function closeModal(){menuOpen=false;$('#modal').hidden=true;$('#modal').innerHTML='';onYes=null}
 function confirmar(msg,fn){onYes=fn;modal('<p>'+esc(msg)+'</p><div class="yn"><button class="btn pri" data-act="yes">SÍ</button><button class="btn" data-act="no">NO</button></div>')}
 const editing=()=>{const a=document.activeElement;return a&&$('#view').contains(a)&&/INPUT|SELECT/.test(a.tagName)&&a.type!=='checkbox'};
 function schedule(){if(editing()){dirty=true;return}render()}
 
+function perSup(){
+  const per={};
+  for(const l of Object.values(S.lista)){const p=per[l.superId]||(per[l.superId]={t:0,n:0,c:0});p.t+=lineTot(l);p.n++;if(l.check)p.c++}
+  return Object.entries(per).sort((a,b)=>nSup(a[0]).localeCompare(nSup(b[0]),'es'));
+}
 function stats(){
   const el=$('#stats');
   if(view!=='lista'){el.innerHTML='';return}
-  const L=Object.values(S.lista);let total=0,cart=0,nc=0;const per={};
-  for(const l of L){const t=lineTot(l);total+=t;if(l.check){cart+=t;nc++}
-    const p=per[l.superId]||(per[l.superId]={t:0,n:0,c:0});p.t+=t;p.n++;if(l.check)p.c++}
-  const sup=Object.entries(per).sort((a,b)=>nSup(a[0]).localeCompare(nSup(b[0]),'es'))
-    .map(([id,p])=>'<div class="sup"><span>'+esc(nSup(id))+'</span><strong>'+money(p.t)+'</strong><em>Marcados <b>'+p.c+' de '+p.n+'</b><br>'+(p.n-p.c?'Faltan '+(p.n-p.c):'Completo')+'</em></div>').join('');
-  el.innerHTML='<div style="display:flex;flex-direction:column;gap:10px">'+
-    '<div class="tag"><div><small>Total de la compra</small><b>'+money(total)+'</b></div><div class="cart">En carrito '+nc+' de '+L.length+'<br>'+money(cart)+'</div></div>'+
-    (sup?'<div class="supers">'+sup+'</div>':'')+
-    '<div class="acts"><button class="btn pri" data-act="finish">Terminar compra</button><button class="btn" data-act="reset">Nueva compra</button></div></div>';
+  const L=Object.values(S.lista);let total=0,cart=0,nc=0;
+  for(const l of L){const t=lineTot(l);total+=t;if(l.check){cart+=t;nc++}}
+  el.innerHTML='<div class="tag"><div class="tg"><div class="l1"><small>Total</small><b>'+money(total)+'</b></div>'+
+    '<div class="l2">En carrito '+nc+' de '+L.length+' · '+money(cart)+'</div></div>'+
+    '<button class="mbtn" data-act="menu" aria-label="Opciones: filtrar, terminar o nueva compra"><i>☰</i>Opciones'+(fSup.size?'<em>'+fSup.size+'</em>':'')+'</button></div>';
+}
+let menuOpen=false;
+function openMenu(){
+  const ps=perSup(),L=Object.values(S.lista),tot=L.reduce((a,l)=>a+lineTot(l),0),nc=L.filter(l=>l.check).length;
+  const sc=$('#modal ul')?.scrollTop||0;
+  const row=(id,name,p,on)=>'<li><button class="mopt" data-fsup="'+esc(id)+'" aria-pressed="'+on+'"><span class="bx">'+(on?'✓':'')+'</span>'+
+    '<span class="nm">'+esc(name)+'<small>Marcados '+p.c+' de '+p.n+' · '+(p.n-p.c?'Faltan '+(p.n-p.c):'Completo')+'</small></span><span class="am">'+money(p.t)+'</span></button></li>';
+  modal('<h2>Opciones</h2><p class="mlab">Filtrar por supermercado</p>'+
+    '<ul>'+row('','Todos',{t:tot,n:L.length,c:nc},!fSup.size)+ps.map(([id,p])=>row(id,nSup(id),p,fSup.has(id))).join('')+'</ul>'+
+    '<p class="mlab">Compra</p><div class="yn mact"><button class="btn pri" data-act="finish">Terminar compra</button><button class="btn" data-act="reset">Nueva compra</button></div>'+
+    '<button class="btn" data-act="no">Cerrar</button>');
+  menuOpen=true;const u=$('#modal ul');if(u)u.scrollTop=sc;
 }
 const supOpts=(sel,first)=>(first?'<option value="">'+first+'</option>':'')+byName(S.sup,'nombre').map(([id,s])=>'<option value="'+id+'"'+(id===sel?' selected':'')+'>'+esc(s.nombre)+'</option>').join('');
 const catOpts=(sel,first)=>(first?'<option value="">'+first+'</option>':'')+byName(S.cat,'nombre').map(([id,c])=>'<option value="'+id+'"'+(id===sel?' selected':'')+'>'+esc(c.nombre)+'</option>').join('');
@@ -200,9 +235,8 @@ function vLista(){
   const sids=[...new Set(L.map(([,l])=>l.superId))];
   for(const x of [...fSup])if(!sids.includes(x))fSup.delete(x);
   let h='<div class="tools"><input type="search" id="q-lista" data-lq placeholder="Buscar producto en la lista" aria-label="Buscar producto en la lista" value="'+esc(lq)+'">'+
-    '<div class="chips" role="group" aria-label="Filtrar por supermercado"><small>Súper:</small><button class="chip" data-fsup="" aria-pressed="'+!fSup.size+'">Todos</button>'+
-    sids.map(x=>'<button class="chip" data-fsup="'+esc(x)+'" aria-pressed="'+fSup.has(x)+'">'+esc(nSup(x))+'</button>').join('')+
-    '</div><p id="lf-msg" hidden></p></div><ul>',g=null;
+    (fSup.size?'<div class="fbar"><span>Filtro: '+esc([...fSup].map(nSup).join(', '))+'</span><button class="chip" data-fsup="">Quitar filtro</button></div>':'')+
+    '<p id="lf-msg" hidden></p></div><ul>',g=null;
   for(const [id,l] of L){
     if(l.superId!==g){g=l.superId;h+='<li class="grp" data-g="'+esc(g)+'">'+esc(nSup(g))+'</li>'}
     const p=S.prod[l.productoId];
@@ -269,6 +303,7 @@ function render(){
   const m=$('#view'),top=m.scrollTop;
   m.innerHTML=view==='lista'?vLista():view==='hist'?vHist():vCatalogo(view);
   if(view==='lista')filtrarLista();
+  if(menuOpen)openMenu();
   if(open.length)m.querySelectorAll('details').forEach(d=>{if(open.includes(d.querySelector('summary').textContent))d.open=true});
   m.scrollTop=top;
 }
@@ -368,6 +403,7 @@ function rmItem(k,id){
 document.addEventListener('click',e=>{
   const fs=e.target.closest('[data-fsup]');
   if(fs){const x=fs.dataset.fsup;if(!x)fSup.clear();else if(fSup.has(x))fSup.delete(x);else fSup.add(x);render();return}
+  if(e.target.closest('[data-act="menu"]'))return openMenu();
   const go=e.target.closest('[data-go]');
   if(go){view=go.dataset.go;$('#view').scrollTop=0;render();return}
   if(e.target.id==='modal'){closeModal();return}
